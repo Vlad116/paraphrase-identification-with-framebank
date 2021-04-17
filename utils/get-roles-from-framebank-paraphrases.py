@@ -134,7 +134,7 @@ def convert_tsv_data_to_with_role(train_file=paraphrases_tsv, test_file=paraphra
             with open(train_file, mode='r', encoding='utf-8') as tsv_file:
                 write_roles_to_tsv(tsv_file,roles_writer)
             
-            with open(train_file, mode='r', encoding='utf-8') as tsv_file:
+            with open(test_file, mode='r', encoding='utf-8') as tsv_file:
                 write_roles_to_tsv(tsv_file,roles_writer)
 
 convert_tsv_data_to_with_role()
