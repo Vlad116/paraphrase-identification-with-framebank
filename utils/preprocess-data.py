@@ -177,6 +177,7 @@ def idx_and_emb_with_role(all_data, emb_file, dim):
             _token2idx(datum, role_word2idx, embs, role_filtered_emb)
         for datum in set_['roles2']:
             _token2idx(datum, role_word2idx, embs, role_filtered_emb)
+
     print('{} word types'.format(len(role_word2idx)))
     print(role_filtered_emb)
     role_filtered_emb = numpy.asarray(role_filtered_emb, dtype='float32')

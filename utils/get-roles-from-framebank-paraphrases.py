@@ -34,14 +34,14 @@ def create_roles_dictionary(framebank_file=framebank_file):
             if num == current_line:
                 if pred_delimeter in line:
                     pred = re.sub("^\s+|\n|\r|\s+$", '', substring_after(line, pred_delimeter))
-                    roles += pred + ' '
+                    roles += pred + ','
                     # print('pred: ', pred)
                     current_line += 1
                     continue
                 elif 'Arg(' in line:
                     arg = re.sub("^\s+|\n|\r|\s+$", '', substring_after(line, arg_delim))
                     arg_role = line[line.find(arg_role_start_char) + 1 : line.find(arg_role_end_char)]
-                    roles += arg + ' '
+                    roles += arg_role + ','
                     # print('ARG: ', arg)
                     # print('ARG role: ', arg_role)
                     current_line += 1
@@ -49,6 +49,8 @@ def create_roles_dictionary(framebank_file=framebank_file):
                 elif line == '\n':
                     roles = roles[:len(roles) - 1]
                     phrases_roles[current_phrase] = roles
+                    # print(roles)
+                    # print(current_phrase)
                     roles = ""
                     current_line += 1
                     continue
