@@ -137,6 +137,7 @@ def _token2idx(tokens, token_map, embs, filtered_emb):
         if tokens[i] not in token_map:
             if tokens[i] in embs:
                 token_map[tokens[i]] = len(token_map)
+                # also random vector for new token
                 filtered_emb.append(embs[tokens[i]])
             else:
                 tokens[i] = '<unk>'
@@ -145,8 +146,7 @@ def _token2idx(tokens, token_map, embs, filtered_emb):
 def idx_and_emb(all_data, emb_file, dim):
     embs = _read_emb(emb_file, dim)
     word2idx = {'<pad>': 0, '<unk>': 1}
-    # 2 -> 3 ??
-    filtered_emb = [numpy.random.uniform(-0.1, 0.1, dim) for _ in range(3)]
+    filtered_emb = [numpy.random.uniform(-0.1, 0.1, dim) for _ in range(2)]
     for set_ in all_data:
         for datum in set_['q1']:
             _token2idx(datum, word2idx, embs, filtered_emb)
@@ -168,20 +168,19 @@ def idx_and_emb(all_data, emb_file, dim):
 
 
 def idx_and_emb_with_role(all_data, emb_file, dim):
-    embs = _read_emb(emb_file, dim)
-    role_word2idx = {'<pad>': 0, '<unk>': 1}
-    # dim (?)
-    role_filtered_emb = [numpy.random.uniform(-0.1, 0.1, 50) for _ in range(3)]
-    
+    role_word2idx = {'<pad>': 0, '<unk>': 1, 'pred': 2}
+    role_filtered_emb = [numpy.random.uniform(-0.1, 0.1, dim) for _ in range(3)]    
+
     for set_ in all_data:
         for datum in set_['roles1']:
-            _token2idx(datum, role_word2idx, embs, role_filtered_emb)
+            _token2idx(datum, role_word2idx, role_filtered_emb)
         for datum in set_['roles2']:
-            _token2idx(datum, role_word2idx, embs, role_filtered_emb)
+            _token2idx(datum, role_word2idx, role_filtered_emb)
 
     print('{} word types'.format(len(role_word2idx)))
     print(role_filtered_emb)
     role_filtered_emb = numpy.asarray(role_filtered_emb, dtype='float32')
+
     return role_filtered_emb, role_word2idx
 
 def main():

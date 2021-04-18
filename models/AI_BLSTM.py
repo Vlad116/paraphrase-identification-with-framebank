@@ -136,7 +136,7 @@ def run_batch(b_data, b_lengths, model, optimizer=None):
         return loss.item()
     else:
         _, predicted = outputs.data.max(1)
-        prob = func.softmax(outputs).data
+        prob = func.softmax(outputs, dim = 1).data
         return predicted, prob[:, 1]
 
 

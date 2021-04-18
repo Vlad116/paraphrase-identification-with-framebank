@@ -30,6 +30,10 @@ def create_roles_dictionary(framebank_file=framebank_file):
         roles = ""
         phrases_roles = {}
 
+        current_phrase_line = 1
+        tokenized_phr_line = 2
+        phrases_tokenized_ph = {}
+
         for num, line in enumerate(fbFile, 1):
             if num == current_line:
                 if pred_delimeter in line:
@@ -56,15 +60,21 @@ def create_roles_dictionary(framebank_file=framebank_file):
                     continue
 
                 # print('\nphrase: ', line.replace("\n",""))
+                tokenized_phr_line = current_line + 1
                 current_line += 2
                 current_phrase = line.replace("\n","")
+            
+            if num == tokenized_phr_line:
+                phrases_tokenized_ph[current_phrase] = line.replace("\n","")                                
+        
     
-    return phrases_roles
+    return phrases_roles,phrases_tokenized_ph
 
-roles_dictionary = create_roles_dictionary(framebank_file)
+roles_dictionary, tokenized_ph_dictionary = create_roles_dictionary(framebank_file)
 
-# for key,value in roles_dictionary.items():
-#     print('Phrase: ' + key + ' Roles: ' + value)
+for key in roles_dictionary.keys():
+    print('Phrase: ' + key + ' Tokenized: ' + tokenized_ph_dictionary[key] + 'Roles: ' + roles_dictionary[key])
+
 
 def read_tsv_and_find_roles(file, writer):
     file_reader = csv.DictReader(file, delimiter='\t',quotechar="'", quoting=csv.QUOTE_MINIMAL)
@@ -139,4 +149,4 @@ def convert_tsv_data_to_with_role(train_file=paraphrases_tsv, test_file=paraphra
             with open(test_file, mode='r', encoding='utf-8') as tsv_file:
                 write_roles_to_tsv(tsv_file,roles_writer)
 
-convert_tsv_data_to_with_role()
+# convert_tsv_data_to_with_role()
