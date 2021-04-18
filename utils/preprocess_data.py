@@ -142,16 +142,6 @@ def _token2idx(tokens, token_map, embs, filtered_emb):
                 tokens[i] = '<unk>'
         tokens[i] = token_map[tokens[i]]
 
-# def _role_token2idx(tokens,token_map,emb,filtered_emb):
-#     for i in range(len(tokens)):
-#         if tokens[i] not in token_map:
-#             if tokens[i] in embs:
-#                 token_map[tokens[i]] = len(token_map)
-#                 filtered_emb.append(embs[tokens[i]])
-#             else:
-#                 tokens[i] = '<unk>'
-#         tokens[i] = token_map[tokens[i]]
-
 def idx_and_emb(all_data, emb_file, dim):
     embs = _read_emb(emb_file, dim)
     word2idx = {'<pad>': 0, '<unk>': 1}
@@ -165,6 +155,17 @@ def idx_and_emb(all_data, emb_file, dim):
     print('{} word types'.format(len(word2idx)))
     filtered_emb = numpy.asarray(filtered_emb, dtype='float32')
     return filtered_emb, word2idx
+
+# def _role_token2idx(tokens,token_map,emb,filtered_emb):
+#     for i in range(len(tokens)):
+#         if tokens[i] not in token_map:
+#             if tokens[i] in embs:
+#                 token_map[tokens[i]] = len(token_map)
+#                 filtered_emb.append(embs[tokens[i]])
+#             else:
+#                 tokens[i] = '<unk>'
+#         tokens[i] = token_map[tokens[i]]
+
 
 def idx_and_emb_with_role(all_data, emb_file, dim):
     embs = _read_emb(emb_file, dim)
@@ -186,22 +187,22 @@ def idx_and_emb_with_role(all_data, emb_file, dim):
 def main():
     all_data = read_all_data()
     print('Reading data done.')
-    role_data = read_role_data()
-    print('Reading roles data done.')
+    # role_data = read_role_data()
+    # print('Reading roles data done.')
     tokenized = tokenize_data(all_data)
+    # tokenized_roles = tokenize_roles(role_data)
     print('Tokenization done.')
-    tokenized_roles = tokenize_roles(role_data)
 
     emb_file = data_path + 'glove.840B.300d.sst.txt'
     filtered_emb, word2idx = idx_and_emb(tokenized, emb_file, 300)
     print('Embedding done.')
 
-    role_filtered_emb, role_word2idx = idx_and_emb_with_role(tokenized_roles, emb_file, 300)
-    print('Role embedding done.')    
+    # role_filtered_emb, role_word2idx = idx_and_emb_with_role(tokenized_roles, emb_file, 300)
+    # print('Role embedding done.')    
 
     with open(data_path + 'paraphrases_emb', 'wb') as f:
-        # pickle.dump((tokenized, filtered_emb, word2idx), f)
-        pickle.dump((tokenized, filtered_emb, word2idx, role_data, role_filtered_emb, role_word2idx), f)
+        pickle.dump((tokenized, filtered_emb, word2idx), f)
+        # pickle.dump((tokenized, filtered_emb, word2idx, role_data, role_filtered_emb, role_word2idx), f)
     print('Saved.')
 
 main()
