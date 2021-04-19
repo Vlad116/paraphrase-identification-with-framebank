@@ -74,7 +74,7 @@ roles_dictionary, tokenized_ph_dictionary = create_roles_dictionary(framebank_fi
 
 for key in roles_dictionary.keys():
     print('Phrase: ' + key + ' Tokenized: ' + tokenized_ph_dictionary[key] + 'Roles: ' + roles_dictionary[key])
-
+# теперь из этого формата в tsv и к ролям добавлять до соответств...
 
 def read_tsv_and_find_roles(file, writer):
     file_reader = csv.DictReader(file, delimiter='\t',quotechar="'", quoting=csv.QUOTE_MINIMAL)
