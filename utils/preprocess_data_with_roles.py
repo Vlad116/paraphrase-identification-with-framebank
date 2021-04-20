@@ -164,7 +164,7 @@ def _role_token2idx(tokens, token_map, role_filtered_emb, dim):
         tokens[i] = token_map[tokens[i]]
 
 def idx_and_emb_with_role(all_data, dim):
-    role_word2idx = {'<pad>': 0, '<unk>': 1, 'pred': 2}
+    role_word2idx = {'<pad>': 0, '<unk>': 1, '<pred>': 2}
     role_filtered_emb = [numpy.random.uniform(-0.1, 0.1, dim) for _ in range(3)]    
 
     for set_ in all_data:

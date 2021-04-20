@@ -9,13 +9,11 @@ paraphrases_gold_tsv = '../data/paraphrases_gold.tsv'
 roles_file = '../data/framebank_roles.tsv'
 paraphrases_with_roles = '../data/paraphrases_framebank.tsv'
 
-
 def substring_after(s, delim):
     return s.partition(delim)[2]
 
 def create_roles_dictionary(framebank_file=framebank_file):
     with open(framebank_file, encoding="utf8") as fbFile:
-
         # Удалить пробелы и переносы строк в выделенном pred/arg
         regexp = "^\s+|\n|\r|\s+$"
         pred_delimeter = '=====Pred: '
@@ -30,8 +28,8 @@ def create_roles_dictionary(framebank_file=framebank_file):
         roles = ""
         phrases_roles = {}
 
-        current_phrase_line = 1
         tokenized_phr_line = 2
+        roles_in_phrase_map = {}
         phrases_tokenized_ph = {}
 
         for num, line in enumerate(fbFile, 1):
@@ -39,6 +37,7 @@ def create_roles_dictionary(framebank_file=framebank_file):
                 if pred_delimeter in line:
                     pred = re.sub("^\s+|\n|\r|\s+$", '', substring_after(line, pred_delimeter))
                     roles += pred + ','
+                    roles_in_phrase_map[pred] = '<pred>'
                     # print('pred: ', pred)
                     current_line += 1
                     continue
@@ -46,38 +45,43 @@ def create_roles_dictionary(framebank_file=framebank_file):
                     arg = re.sub("^\s+|\n|\r|\s+$", '', substring_after(line, arg_delim))
                     arg_role = line[line.find(arg_role_start_char) + 1 : line.find(arg_role_end_char)]
                     roles += arg_role + ','
+                    roles_in_phrase_map[arg] = arg_role
                     # print('ARG: ', arg)
                     # print('ARG role: ', arg_role)
                     current_line += 1
                     continue          
                 elif line == '\n':
                     roles = roles[:len(roles) - 1]
-                    phrases_roles[current_phrase] = roles
-                    # print(roles)
-                    # print(current_phrase)
+                    phrases_roles[current_phrase] = roles_in_phrase_map                    
+                    roles_in_phrase_map = {}
                     roles = ""
                     current_line += 1
                     continue
 
-                # print('\nphrase: ', line.replace("\n",""))
                 tokenized_phr_line = current_line + 1
                 current_line += 2
                 current_phrase = line.replace("\n","")
-            
+
             if num == tokenized_phr_line:
-                phrases_tokenized_ph[current_phrase] = line.replace("\n","")                                
-        
-    
-    return phrases_roles,phrases_tokenized_ph
+                phrases_tokenized_ph[current_phrase] = line.replace("\n","") 
+
+    return phrases_roles, phrases_tokenized_ph
 
 roles_dictionary, tokenized_ph_dictionary = create_roles_dictionary(framebank_file)
 
-for key in roles_dictionary.keys():
-    print('Phrase: ' + key + ' Tokenized: ' + tokenized_ph_dictionary[key] + 'Roles: ' + roles_dictionary[key])
-# теперь из этого формата в tsv и к ролям добавлять до соответств...
+def align_tokens_lenght(tokenized_phrase,phrase_roles):
+    tokens = tokenized_phrase.split()
+    roles_tokens = []
+    
+    for token in tokens:
+        if token in phrase_roles:
+            roles_tokens.append(phrase_roles[token])
+        else:
+            roles_tokens.append('<unk>')
+    return roles_tokens
 
 def read_tsv_and_find_roles(file, writer):
-    file_reader = csv.DictReader(file, delimiter='\t',quotechar="'", quoting=csv.QUOTE_MINIMAL)
+    file_reader = csv.DictReader(file, delimiter='\t', quoting=csv.QUOTE_NONE)
     line_count = 0
 
     for row in file_reader:
@@ -85,68 +89,49 @@ def read_tsv_and_find_roles(file, writer):
             # print(f'Column names are {" ".join(row)}')
             line_count += 1
 
-        q1 = row["question1"]
-        q2 = row["question2"]
-        roles1 = roles_dictionary[q1] if q1 in roles_dictionary.keys() and roles_dictionary[q1] != "" else "none"
-        roles2 = roles_dictionary[q2] if q2 in roles_dictionary.keys() and roles_dictionary[q2] != "" else "none"
+        ph1 = row["question1"]
+        ph2 = row["question2"]
+        
+        try:
+            tokenized_ph1 = tokenized_ph_dictionary[ph1.rstrip()]
+        except KeyError as e:
+            print(e)
+            print(ph1[len(ph1) - 1:])
+            print(ph1[:-1])
+            print(ph1[len(ph1) - 1:] == ' ' or ph1[len(ph1) - 1:] == '\t')
+            if ph1[len(ph1) - 1:] == ' ' or ph1[len(ph1) - 1:] == '\t':
+                tokenized_ph1 = tokenized_ph_dictionary[ph1[:-1]]            
+            else:
+                continue
 
+        roles1 = align_tokens_lenght(tokenized_ph1, roles_dictionary[ph1.rstrip()])
+
+        tokenized_ph2 = tokenized_ph_dictionary[ph2.rstrip()]
+        roles2 = align_tokens_lenght(tokenized_ph2, roles_dictionary[ph2.rstrip()])        
+        
+        # ','.join() - convert rokes_tokens list to string with ',' separator
         writer.writerow({
-            'question1': q1, 
-            'roles1': roles1,
-            'question2': q2,
-            'roles2': roles2, 
-            'is_duplicate': row["is_duplicate"]
-            })
-        line_count += 1
-
-def write_roles_to_tsv(file, writer):
-    file_reader = csv.DictReader(file, delimiter='\t',quotechar="'", quoting=csv.QUOTE_MINIMAL)
-    line_count = 0
-
-    for row in file_reader:
-        if line_count == 0:
-            # print(f'Column names are {" ".join(row)}')
-            line_count += 1
-
-        q1 = row["question1"]
-        q2 = row["question2"]
-
-        roles1 = roles_dictionary[q1] if q1 in roles_dictionary.keys() and roles_dictionary[q1] != "" else "none"
-        roles2 = roles_dictionary[q2] if q2 in roles_dictionary.keys() and roles_dictionary[q2] != "" else "none"
-
-        writer.writerow({
-            'roles1': roles1,
-            'roles2': roles2, 
+            'phrase1': tokenized_ph1, 
+            'roles1': ','.join(roles1),
+            'phrase2': tokenized_ph2,
+            'roles2': ','.join(roles2), 
             'is_duplicate': row["is_duplicate"]
         })
 
         line_count += 1
-        
-def convert_tsv_data_to_with_role(train_file=paraphrases_tsv, test_file=paraphrases_gold_tsv, output_file=paraphrases_with_roles, roles_file=roles_file):
-    # question1 question2 is_duplicate
+
+def convert_tsv_data_to_with_role(train_file=paraphrases_tsv, test_file=paraphrases_gold_tsv, output_file=paraphrases_with_roles):
     with open(output_file, mode='w', encoding='utf-8', newline='') as output_file:
-        fieldnames = ['question1','roles1','question2','roles2','is_duplicate']
+        fieldnames = ['phrase1','roles1','phrase2','roles2','is_duplicate']
         delimiter = '\t'
-        quotechar = "'"
-        quoting = quoting=csv.QUOTE_MINIMAL
-        output_writer = csv.DictWriter(output_file, fieldnames=fieldnames, delimiter=delimiter, quotechar=quotechar, quoting=quoting)
+        quotechar = ''        
+        quoting = quoting=csv.QUOTE_NONE
+        output_writer = csv.DictWriter(output_file, fieldnames=fieldnames, delimiter=delimiter, quoting=quoting, quotechar=quotechar, escapechar='')
         output_writer.writeheader()
 
-        with open(roles_file, mode='w', encoding='utf-8', newline='') as roles_file:
-            roles_fieldnames = ['roles1', 'roles2', 'is_duplicate']
-            roles_writer = csv.DictWriter(roles_file, fieldnames=roles_fieldnames, delimiter=delimiter, quotechar=quotechar, quoting=quoting)
-            roles_writer.writeheader()
+        with open(train_file, mode='r', encoding='utf-8') as tsv_file:
+            read_tsv_and_find_roles(tsv_file,output_writer)
+        with open(test_file, mode='r', encoding='utf-8') as tsv_file:
+            read_tsv_and_find_roles(tsv_file,output_writer)
 
-            with open(train_file, mode='r', encoding='utf-8') as tsv_file:
-                read_tsv_and_find_roles(tsv_file,output_writer)
-
-            with open(test_file, mode='r', encoding='utf-8') as tsv_file:
-                read_tsv_and_find_roles(tsv_file,output_writer)
-
-            with open(train_file, mode='r', encoding='utf-8') as tsv_file:
-                write_roles_to_tsv(tsv_file,roles_writer)
-            
-            with open(test_file, mode='r', encoding='utf-8') as tsv_file:
-                write_roles_to_tsv(tsv_file,roles_writer)
-
-# convert_tsv_data_to_with_role()
+convert_tsv_data_to_with_role()
